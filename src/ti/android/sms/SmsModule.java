@@ -35,7 +35,7 @@ public class SmsModule extends KrollModule
 
 	private static final String MESSAGE_SENT = "SMS_SENT";
 	private static final String MESSAGE_DELIVERED = "SMS_DELIVERED";
-	
+
 	@Kroll.constant
 	public static final int SENT = 0;
 	@Kroll.constant
@@ -45,11 +45,11 @@ public class SmsModule extends KrollModule
 	@Kroll.constant
 	public static final int FAILED = -2;
 
-	
-	
+
+
 	// You can define constants with @Kroll.constant, for example:
 	// @Kroll.constant public static final String EXTERNAL_NAME = value;
-	
+
 	public SmsModule()
 	{
 		super();
@@ -61,15 +61,15 @@ public class SmsModule extends KrollModule
 	{
 		Log.d(LCAT, "inside onAppCreate");
 	}
-	
-	
+
+
 	void setupIntentReceivers() {
-		
+
 		Activity currentActivity = TiApplication.getInstance().getCurrentActivity();
 		//Activity currentActivity = this.getActivity();
-		
+
 		//let's register broadcast receivers
-		
+
 		BroadcastReceiver sentReceiver = new BroadcastReceiver(){
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -81,7 +81,7 @@ public class SmsModule extends KrollModule
 					Log.d(LCAT, "message sent");
 					fireEvent("complete", event);
 					break;
-				default: 
+				default:
 					event = createEventObject(false, FAILED, "Message delivery failed");
 					Log.d(LCAT, "message sending failure");
 					fireEvent("complete", event);
@@ -89,11 +89,11 @@ public class SmsModule extends KrollModule
 				}
 			}
 		};
-		
+
 		//---when the SMS has been sent---
 		currentActivity.registerReceiver(sentReceiver, new IntentFilter(MESSAGE_SENT));
 
-		
+
 		BroadcastReceiver deliveredReceiver = new BroadcastReceiver(){
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -109,16 +109,16 @@ public class SmsModule extends KrollModule
 					event = createEventObject(false, FAILED, "Operation canceled");
 					Log.d(LCAT, "message delivering failure");
 					fireEvent("complete", event);
-					break;                        
+					break;
 				}
 			}
-		}; 
-		
+		};
+
 		//---when the SMS has been delivered---
-		currentActivity.registerReceiver(deliveredReceiver, new IntentFilter(MESSAGE_DELIVERED));        
+		currentActivity.registerReceiver(deliveredReceiver, new IntentFilter(MESSAGE_DELIVERED));
 	}
-	
-	public KrollDict createEventObject (boolean success, int result, String resultMessage) 
+
+	public KrollDict createEventObject (boolean success, int result, String resultMessage)
 	{
 		KrollDict event = new KrollDict();
 		event.put("success", success);
@@ -127,30 +127,50 @@ public class SmsModule extends KrollModule
 
 		return event;
 	}
-	
+
 
 	// Methods
 	@Kroll.method
 	public void sendSMS(String recipient, String messageBody)
 	{
-		
+
 		Activity currentActivity = this.getActivity();
 
 		Intent sentIntent = new Intent(MESSAGE_SENT);
 		Intent deliveredIntent = new Intent(MESSAGE_DELIVERED);
-		
+
 		PendingIntent sentPI = PendingIntent.getBroadcast(currentActivity, 0,
 				sentIntent, 0);
 
 		PendingIntent deliveredPI = PendingIntent.getBroadcast(currentActivity, 0,
 				deliveredIntent, 0);
-		
+
 		SmsManager sms = SmsManager.getDefault();
-		
+
 		sms.sendTextMessage(recipient, null, messageBody, sentPI, deliveredPI);
 
 	}
-	
+
+	// Methods
+	@Kroll.method
+	public void sendDataSMS(String recipient, String data, short Port)
+	{
+
+		Activity currentActivity = this.getActivity();
+		byte[] bytes = data.getBytes();
+		Intent sentIntent = new Intent(MESSAGE_SENT);
+		Intent deliveredIntent = new Intent(MESSAGE_DELIVERED);
+
+		PendingIntent sentPI = PendingIntent.getBroadcast(currentActivity, 0,
+				sentIntent, 0);
+
+		PendingIntent deliveredPI = PendingIntent.getBroadcast(currentActivity, 0,
+				deliveredIntent, 0);
+
+		SmsManager sms = SmsManager.getDefault();
+		Log.d(LCAT, "binary sms send");
+		sms.sendDataMessage(recipient, null, Port, bytes, sentPI, deliveredPI);
+	}
+
 
 }
-
